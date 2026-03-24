@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Mail, Phone, Calendar, Search, Filter, Check, X, ShieldAlert, Cpu, LogOut, Trash2 } from "lucide-react";
-import { acceptRequest, rejectRequest, setupHospital, updateHospital } from "./actions";
+import { acceptRequest, rejectRequest, setupHospital, updateHospital, addSuperadmin, deleteSuperadmin } from "./actions";
 import { formatDate, getRelativeTime, parseDate } from "@/lib/utils";
 import { logoutAction } from "@/app/login/actions";
 import { useRouter } from "next/navigation";
@@ -36,16 +36,14 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
     if (!newAdminEmail.trim()) return;
     setIsAddingAdmin(true);
     try {
-      const { collection, addDoc, serverTimestamp } = require("firebase/firestore");
-      const { db } = require("@/lib/firebase");
-      await addDoc(collection(db, "superadmins"), {
-        email: newAdminEmail.trim(),
-        addedBy: loggedInEmail || "Unknown",
-        createdAt: serverTimestamp()
-      });
-      alert("Superadmin added successfully!");
-      setNewAdminEmail("");
-      router.refresh(); // Refresh static props
+      const res = await addSuperadmin(newAdminEmail, loggedInEmail);
+      if (res.success) {
+        alert("Superadmin added successfully!");
+        setNewAdminEmail("");
+        router.refresh(); // Refresh static props
+      } else {
+        alert("Failed to add superadmin: " + res.error);
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to add superadmin.");
@@ -57,11 +55,13 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
   const handleDeleteAdmin = async (adminId) => {
     if (!confirm("Are you sure you want to remove this superadmin?")) return;
     try {
-      const { doc, deleteDoc } = require("firebase/firestore");
-      const { db } = require("@/lib/firebase");
-      await deleteDoc(doc(db, "superadmins", adminId));
-      alert("Superadmin removed successfully!");
-      router.refresh();
+      const res = await deleteSuperadmin(adminId);
+      if (res.success) {
+        alert("Superadmin removed successfully!");
+        router.refresh();
+      } else {
+        alert("Failed to remove superadmin: " + res.error);
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to remove superadmin.");

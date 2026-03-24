@@ -20,7 +20,10 @@ export default function LoginPage() {
       
       // Check if user is the primary superadmin
       if (user.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL) {
-        await googleLoginAction(user.email);
+        const res = await googleLoginAction(user.email);
+        if (res?.success) {
+          window.location.href = "/";
+        }
         return;
       }
 
@@ -29,7 +32,10 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
-        await googleLoginAction(user.email);
+        const res = await googleLoginAction(user.email);
+        if (res?.success) {
+          window.location.href = "/";
+        }
         return;
       }
 

@@ -10,6 +10,6 @@ export async function logoutAction() {
 
 export async function googleLoginAction(email) {
   await createSession(email);
-  redirect("/");
+  return { success: true };
 }
 

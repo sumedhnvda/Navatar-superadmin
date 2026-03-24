@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, collection, addDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, addDoc, deleteDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 
 export async function acceptRequest(requestId) {
@@ -70,6 +70,36 @@ export async function rejectRequest(requestId) {
     return { success: true };
   } catch (error) {
     console.error("Failed to reject request:", error);
+    return { error: error.message };
+  }
+}
+
+export async function addSuperadmin(email, addedBy) {
+  try {
+    const emailTrimmed = email.trim();
+    if (!emailTrimmed) return { error: "Email is required" };
+
+    await addDoc(collection(db, "superadmins"), {
+      email: emailTrimmed,
+      addedBy: addedBy || "Unknown",
+      createdAt: new Date().toISOString()
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to add superadmin:", error);
+    return { error: error.message };
+  }
+}
+
+export async function deleteSuperadmin(adminId) {
+  try {
+    await deleteDoc(doc(db, "superadmins", adminId));
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete superadmin:", error);
     return { error: error.message };
   }
 }
