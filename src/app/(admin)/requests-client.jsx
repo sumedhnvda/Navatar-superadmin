@@ -479,7 +479,7 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                   Setup Hospital Account
                 </h2>
                 <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.5 }}>
-                  Assign an admin and construct their fleet of Navatars. Default hospital password will be strictly set to <strong style={{ color: "#0f172a" }}>admin123</strong>.
+                  Assign an admin and construct their fleet of Navatars. They will use Google Authentication to log in.
                 </p>
               </div>
               

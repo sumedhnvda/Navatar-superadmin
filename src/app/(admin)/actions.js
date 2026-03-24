@@ -24,7 +24,6 @@ export async function setupHospital(requestId, data) {
       sourceRequestId: requestId,
       hospitalName: data.hospitalName, // Add hospital name
       adminEmail: data.adminEmail,
-      adminPassword: "admin123", // default configuration
       numberOfNavatars: data.numberOfBots,
       botIds: data.botIds,
       status: "active",
