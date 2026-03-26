@@ -245,35 +245,26 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
     });
   };
 
-  const validateEditAvailability = async (email, hid, nameToCheck = null, excludeId = null) => {
-    if (!email && !hid && !nameToCheck) {
+  const validateEditAvailability = async (nameToCheck = null, excludeId = null) => {
+    if (!nameToCheck?.trim()) {
       setEditAvailabilityHint(null);
       return;
     }
+    
     setIsCheckingEdit(true);
-    
-    let nameCollision = false;
-    if (nameToCheck) {
-      nameCollision = liveHospitals?.some(h => 
-        h.hospitalName.toLowerCase().trim() === nameToCheck.toLowerCase().trim() && 
-        h._id !== excludeId
-      );
-    }
+    const nameCollision = liveHospitals?.some(h => 
+      h.hospitalName.toLowerCase().trim() === nameToCheck.toLowerCase().trim() && 
+      h._id !== excludeId
+    );
 
-    const res = await checkAvailability(email, hid);
-    
     if (nameCollision) {
       setEditAvailabilityHint({ 
         type: 'error', 
         message: 'Name already exists. Please use unique format like "Name-Location"',
         field: 'name' 
       });
-    } else if (res.available) {
-      setEditAvailabilityHint({ type: 'success', message: 'ID and Email are available' });
-    } else if (res.error) {
-       // ignore transient errors
     } else {
-      setEditAvailabilityHint({ type: 'error', message: res.reason, field: res.field });
+      setEditAvailabilityHint(null);
     }
     setIsCheckingEdit(false);
   };
@@ -300,6 +291,22 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
       return;
     }
     
+    // Final check before submission
+    setIsCheckingEdit(true);
+    const availRes = await checkAvailability(editAdminEmail, editHospitalId);
+    if (!availRes.available && availRes.field === 'email') {
+      // Check if it's actually a different hospital with this email
+      const emailQ = query(collection(db, "hospitals"), where("adminEmail", "==", editAdminEmail));
+      const emailSnap = await getDocs(emailQ);
+      const otherHospitals = emailSnap.docs.filter(d => d.id !== editHospitalId);
+      if (otherHospitals.length > 0) {
+        setEditAvailabilityHint({ type: 'error', message: availRes.reason, field: availRes.field });
+        setIsCheckingEdit(false);
+        return;
+      }
+    }
+    setIsCheckingEdit(false);
+
     if (editAvailabilityHint?.type === 'error') {
       appAlert("error", "Validation Failed", editAvailabilityHint.message);
       return;
@@ -696,7 +703,7 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                     value={editAdminEmail}
                     onChange={(e) => {
                       setEditAdminEmail(e.target.value);
-                      validateEditAvailability(e.target.value, editHospitalId, editHospitalName, editHospitalId);
+                      if (editAvailabilityHint?.field === 'email') setEditAvailabilityHint(null);
                     }}
                     placeholder="admin@hospital.com"
                     style={{
@@ -919,33 +926,24 @@ function HospitalSetupModal({ open, onClose, onSave, initialRequest, liveHospita
 
   if (!open) return null;
 
-  const validateAvailability = async (m, i, n = null) => {
-    if (!m && !i && !n) {
+  const validateAvailability = async (n = null) => {
+    if (!n?.trim()) {
       setAvailabilityHint(null);
       return;
     }
     setIsChecking(true);
-    let nameCollision = false;
-    if (n && n.trim()) {
-      nameCollision = liveHospitals?.some(h => 
-        h.hospitalName.toLowerCase().trim() === n.toLowerCase().trim()
-      );
-    }
+    const nameCollision = liveHospitals?.some(h => 
+      h.hospitalName.toLowerCase().trim() === n.toLowerCase().trim()
+    );
 
-    const res = await checkAvailability(m, i);
-    
     if (nameCollision) {
       setAvailabilityHint({ 
         type: 'error', 
         message: 'Hospital name already exists. Please use a unique format like "Name-Location"',
         field: 'name' 
       });
-    } else if (res.available) {
-      setAvailabilityHint({ type: 'success', message: 'ID and Email are available' });
-    } else if (res.error) {
-       // ignore transient errors
     } else {
-      setAvailabilityHint({ type: 'error', message: res.reason, field: res.field });
+      setAvailabilityHint(null);
     }
     setIsChecking(false);
   };
@@ -963,10 +961,10 @@ function HospitalSetupModal({ open, onClose, onSave, initialRequest, liveHospita
     if (isDirectEntry) {
       const newId = generateComplexId(val);
       setHid(newId);
-      validateAvailability(email, newId, val);
+      validateAvailability(val);
     } else {
       // For existing requests, only validate name
-      validateAvailability(email, hid, val);
+      validateAvailability(val);
     }
 
     // Auto-populate Bot IDs
@@ -1001,6 +999,17 @@ function HospitalSetupModal({ open, onClose, onSave, initialRequest, liveHospita
       setAvailabilityHint({ type: 'error', message: 'Please fill all required fields.', field: 'general' });
       return;
     }
+    
+    // Final check before submission
+    setIsChecking(true);
+    const res = await checkAvailability(email, hid);
+    if (!res.available) {
+      setAvailabilityHint({ type: 'error', message: res.reason, field: res.field });
+      setIsChecking(false);
+      return;
+    }
+    setIsChecking(false);
+    
     if (availabilityHint?.type === 'error') return;
     
     await onSave({ hospitalName: name, adminEmail: email, hospitalId: hid, numberOfBots: numBots, botIds }, isDirectEntry);
@@ -1036,21 +1045,15 @@ function HospitalSetupModal({ open, onClose, onSave, initialRequest, liveHospita
               <div>
                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "8px" }}>Hospital ID (Locked) <span style={{ color: "#ef4444" }}>*</span></label>
                  <div style={{ position: "relative" }}>
-                   <input type="text" readOnly value={hid} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: availabilityHint?.field === 'hid' ? "1.5px solid #ef4444" : "1px solid #e2e8f0", fontSize: "14px", outline: "none", fontWeight: "600", background: "#f1f5f9", color: "#64748b", cursor: "not-allowed" }} />
-                   {isChecking && <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#3b82f6" }}>Checking...</span>}
+                   <input type="text" readOnly value={hid} style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "14px", outline: "none", fontWeight: "600", background: "#f1f5f9", color: "#64748b", cursor: "not-allowed" }} />
                  </div>
-                 {availabilityHint?.field === 'hid' && (
-                    <p style={{ fontSize: "11px", marginTop: "4px", color: availabilityHint.type === 'error' ? '#ef4444' : '#10b981' }}>
-                      {availabilityHint.type === 'error' ?'✕ ' : '✓ '}{availabilityHint.message}
-                    </p>
-                 )}
               </div>
              <div>
                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "8px" }}>Admin Email Address <span style={{ color: "#ef4444" }}>*</span></label>
-               <input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); validateAvailability(e.target.value, hid, name); }} placeholder="admin@hospital.com" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: availabilityHint?.field === 'email' ? "1.5px solid #ef4444" : "1px solid #e2e8f0", fontSize: "14px", outline: "none", background: availabilityHint?.field === 'email' ? "#fff1f2" : "white" }} />
+               <input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (availabilityHint?.field === 'email') setAvailabilityHint(null); }} placeholder="admin@hospital.com" style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: availabilityHint?.field === 'email' ? "1.5px solid #ef4444" : "1px solid #e2e8f0", fontSize: "14px", outline: "none", background: availabilityHint?.field === 'email' ? "#fff1f2" : "white" }} />
                {availabilityHint?.field === 'email' && (
                     <p style={{ fontSize: "11px", marginTop: "4px", color: availabilityHint.type === 'error' ? '#ef4444' : '#10b981' }}>
-                      {availabilityHint.type === 'error' ?'✕ ' : '✓ '}{availabilityHint.message}
+                      ✕ {availabilityHint.message}
                     </p>
                  )}
               </div>
