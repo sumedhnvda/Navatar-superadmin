@@ -99,14 +99,18 @@ export async function updateHospital(hospitalId, data) {
 
     await updateDoc(doc(db, "hospitals", hospitalId), updateData);
 
-    // Also update the linked user request email if it exists
+    // Also update the linked user request if it exists
     const hSnap = await getDoc(doc(db, "hospitals", hospitalId));
     if (hSnap.exists()) {
       const requestId = hSnap.data().sourceRequestId;
-      if (requestId && data.adminEmail) {
-        await updateDoc(doc(db, "user requests", requestId), {
-          email: data.adminEmail
-        });
+      if (requestId) {
+        const requestUpdate = {};
+        if (data.adminEmail) requestUpdate.email = data.adminEmail;
+        if (data.hospitalName) requestUpdate.hospitalName = data.hospitalName;
+        
+        if (Object.keys(requestUpdate).length > 0) {
+          await updateDoc(doc(db, "user requests", requestId), requestUpdate);
+        }
       }
     }
 

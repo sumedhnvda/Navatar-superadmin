@@ -107,6 +107,19 @@ body {
   }
 }
 
+@keyframes pulse-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: pulse-spin 1s linear infinite;
+}
+
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
 }

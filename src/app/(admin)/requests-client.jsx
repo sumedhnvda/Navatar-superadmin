@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Mail, Phone, Calendar, Search, Filter, Check, X, ShieldAlert, Cpu, LogOut, Trash2, Plus, RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Building2, Mail, Phone, Calendar, Search, Filter, Check, X, ShieldAlert, Cpu, LogOut, Trash2, Plus, RotateCcw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { 
@@ -535,27 +535,27 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             {activeTab === "pending" && (
                               <div style={{ display: "flex", gap: "8px" }}>
-                                <button
-                                  onClick={() => handleAccept(r._id)}
-                                  disabled={submittingId === r._id}
-                                  style={{
-                                    display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "8px", 
-                                    border: "1px solid #86efac", background: "#f0fdf4", color: "#166534", fontSize: "13px", 
-                                    fontWeight: "600", cursor: "pointer", opacity: submittingId === r._id ? 0.6 : 1
-                                  }}
-                                >
-                                  <Check size={14} strokeWidth={2.5} /> Accept
-                                </button>
+                                  <button
+                                    onClick={() => handleAccept(r._id)}
+                                    disabled={submittingId === r._id}
+                                    style={{
+                                      display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "8px", 
+                                      border: "1px solid #86efac", background: "#f0fdf4", color: "#166534", fontSize: "13px", 
+                                      fontWeight: "600", cursor: submittingId === r._id ? "not-allowed" : "pointer", opacity: submittingId === r._id ? 0.6 : 1
+                                    }}
+                                  >
+                                    {submittingId === r._id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={2.5} />} Accept
+                                  </button>
                                 <button
                                   onClick={() => handleReject(r._id)}
                                   disabled={submittingId === r._id}
                                   style={{
                                     display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "8px", 
                                     border: "1px solid #fecaca", background: "#fef2f2", color: "#991b1b", fontSize: "13px", 
-                                    fontWeight: "600", cursor: "pointer", opacity: submittingId === r._id ? 0.6 : 1
+                                    fontWeight: "600", cursor: submittingId === r._id ? "not-allowed" : "pointer", opacity: submittingId === r._id ? 0.6 : 1
                                   }}
                                 >
-                                  <X size={14} strokeWidth={2.5} /> Reject
+                                  {submittingId === r._id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} strokeWidth={2.5} />} Reject
                                 </button>
                               </div>
                             )}
@@ -585,18 +585,18 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                               )
                             )}
                             {(activeTab === "accepted" || activeTab === "pending") && (
-                              <button
-                                onClick={() => handleDeleteRequest(r._id, r.hospitalName)}
-                                disabled={submittingId === r._id}
-                                style={{
-                                  display: "flex", alignItems: "center", justifyContent: "center", padding: "8px", borderRadius: "8px", 
-                                  border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", fontSize: "13px", 
-                                  fontWeight: "600", cursor: "pointer", opacity: submittingId === r._id ? 0.6 : 1
-                                }}
-                                title="Delete Request and Allocation"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                                <button
+                                  onClick={() => handleDeleteRequest(r._id, r.hospitalName)}
+                                  disabled={submittingId === r._id}
+                                  style={{
+                                    display: "flex", alignItems: "center", justifyContent: "center", padding: "8px", borderRadius: "8px", 
+                                    border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", fontSize: "13px", 
+                                    fontWeight: "600", cursor: submittingId === r._id ? "not-allowed" : "pointer", opacity: submittingId === r._id ? 0.6 : 1
+                                  }}
+                                  title="Delete Request and Allocation"
+                                >
+                                  {submittingId === r._id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                </button>
                             )}
                             {activeTab === "rejected" && (
                               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -610,10 +610,10 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                                   style={{
                                     display: "flex", alignItems: "center", gap: "6px", padding: "6px", borderRadius: "8px", 
                                     border: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", 
-                                    cursor: "pointer", opacity: submittingId === r._id ? 0.6 : 1
+                                    cursor: submittingId === r._id ? "not-allowed" : "pointer", opacity: submittingId === r._id ? 0.6 : 1
                                   }}
                                 >
-                                  <RotateCcw size={14} />
+                                  {submittingId === r._id ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
                                 </button>
                               </div>
                             )}
@@ -778,16 +778,18 @@ export default function RequestsClient({ requests, hospitals, superadmins, logge
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={submittingId === editSetupId || editAvailabilityHint?.type === 'error'}
-                  style={{
-                    padding: "10px 18px", borderRadius: "8px", border: "none", background: "#3b82f6", color: "white", fontSize: "14px", fontWeight: "600", cursor: (submittingId === editSetupId || editAvailabilityHint?.type === 'error') ? "not-allowed" : "pointer",
-                    boxShadow: "0 4px 12px rgba(59,130,246,0.3)", opacity: (submittingId === editSetupId || editAvailabilityHint?.type === 'error') ? 0.7 : 1
-                  }}
-                >
-                  {submittingId === editSetupId ? "Saving..." : "Save Changes"}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={submittingId === editSetupId || editAvailabilityHint?.type === 'error'}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "8px",
+                      padding: "10px 18px", borderRadius: "8px", border: "none", background: "#3b82f6", color: "white", fontSize: "14px", fontWeight: "600", cursor: (submittingId === editSetupId || editAvailabilityHint?.type === 'error') ? "not-allowed" : "pointer",
+                      boxShadow: "0 4px 12px rgba(59,130,246,0.3)", opacity: (submittingId === editSetupId || editAvailabilityHint?.type === 'error') ? 0.7 : 1
+                    }}
+                  >
+                    {submittingId === editSetupId && <Loader2 size={16} className="animate-spin" />}
+                    {submittingId === editSetupId ? "Saving..." : "Save Changes"}
+                  </button>
               </div>
             </form>
           </div>
@@ -1075,7 +1077,8 @@ function HospitalSetupModal({ open, onClose, onSave, initialRequest, liveHospita
           </div>
           <div style={{ padding: "16px 24px", background: "#f8fafc", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
             <button type="button" onClick={onClose} style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", color: "#475569", fontSize: "14px", cursor: "pointer" }}>Cancel</button>
-            <button type="submit" disabled={submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error'} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "#3b82f6", color: "white", fontSize: "14px", fontWeight: "600", cursor: (submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error') ? "not-allowed" : "pointer", opacity: (submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error') ? 0.7 : 1 }}>
+            <button type="submit" disabled={submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error'} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "8px", border: "none", background: "#3b82f6", color: "white", fontSize: "14px", fontWeight: "600", cursor: (submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error') ? "not-allowed" : "pointer", opacity: (submittingId === (initialRequest?._id || "direct") || availabilityHint?.type === 'error') ? 0.7 : 1 }}>
+              {submittingId === (initialRequest?._id || "direct") && <Loader2 size={16} className="animate-spin" />}
               {submittingId === (initialRequest?._id || "direct") ? "Saving..." : (isDirectEntry ? "Onboard Hospital" : "Setup & Save Configurations")}
             </button>
           </div>
